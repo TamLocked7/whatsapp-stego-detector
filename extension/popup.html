@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body {
+      width: 260px;
+      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+      padding: 14px;
+      margin: 0;
+    }
+    h1 { font-size: 15px; margin: 0 0 8px; }
+    p  { font-size: 12px; color: #555; margin: 4px 0; }
+    .status { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 12px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #9ca3af; }
+    .dot.online { background: #22c55e; }
+    .dot.offline { background: #ef4444; }
+    .stats { margin-top: 10px; font-size: 12px; }
+    .stats div { display: flex; justify-content: space-between; padding: 2px 0; }
+  </style>
+</head>
+<body>
+  <h1>🔍 WhatsApp Stego Detector</h1>
+  <p>Scans images on WhatsApp Web using LSB steganalysis (Chi-Square, RS-Analysis, SPA) + RandomForest.</p>
+  <div class="status">
+    <span id="dot" class="dot"></span>
+    <span id="statusText">Checking backend…</span>
+  </div>
+  <div class="stats">
+    <div><span>Images scanned</span><span id="scanned">0</span></div>
+    <div><span>Flagged suspicious</span><span id="flagged">0</span></div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

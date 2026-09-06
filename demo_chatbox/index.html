@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Stego Detector — Demo Chat</title>
+<style>
+  :root {
+    --bg: #0b141a;
+    --panel: #111b21;
+    --bubble: #005c4b;
+    --bubble-in: #202c33;
+    --text: #e9edef;
+    --muted: #8696a0;
+    --accent: #00a884;
+    --danger: #ef4444;
+    --safe: #22c55e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #0a0f13;
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .phone {
+    width: 480px;
+    height: 780px;
+    background: var(--bg);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    border: 1px solid #1f2c33;
+  }
+  .header {
+    background: var(--panel);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #1f2c33;
+  }
+  .header .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, #00a884, #005c4b);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .header .title { font-weight: 600; font-size: 15px; }
+  .header .subtitle { font-size: 12px; color: var(--muted); }
+  .status-pill {
+    margin-left: auto;
+    font-size: 11px;
+    padding: 4px 9px;
+    border-radius: 10px;
+    background: #1f2c33;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .status-pill.online .dot { background: var(--safe); }
+  .status-pill.offline .dot { background: var(--danger); }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-image: radial-gradient(circle at 20px 20px, #ffffff08 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  .msg-row { display: flex; }
+  .msg-row.out { justify-content: flex-end; }
+  .bubble {
+    max-width: 78%;
+    background: var(--bubble-in);
+    border-radius: 10px;
+    padding: 6px;
+    position: relative;
+  }
+  .msg-row.out .bubble { background: var(--bubble); }
+  .bubble img {
+    max-width: 100%;
+    border-radius: 6px;
+    display: block;
+  }
+  .bubble .meta {
+    font-size: 10px;
+    color: var(--muted);
+    padding: 4px 4px 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .bubble .caption {
+    font-size: 13px;
+    padding: 6px 4px 2px;
+    color: var(--text);
+  }
+
+  .badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 10px;
+    color: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    letter-spacing: 0.2px;
+  }
+  .badge.safe { background: var(--safe); }
+  .badge.suspicious { background: var(--danger); animation: pulse 1.4s ease-in-out infinite; }
+  .badge.scanning { background: #6b7280; }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.6); }
+    70% { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+    100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+  }
+
+  .signals {
+    font-size: 10px;
+    color: var(--muted);
+    padding: 2px 4px 4px;
+    line-height: 1.5;
+  }
+
+  .composer {
+    background: var(--panel);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid #1f2c33;
+  }
+  .composer input[type="text"] {
+    flex: 1;
+    background: #1f2c33;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 16px;
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+  }
+  .attach-btn, .send-btn {
+    background: #1f2c33;
+    border: none;
+    color: var(--text);
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .attach-btn:hover, .send-btn:hover { background: #2a3942; }
+  .send-btn { background: var(--accent); color: #06231d; }
+  .send-btn:hover { background: #02c294; }
+  #fileInput { display: none; }
+
+  .dropzone-hint {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    padding: 30px 10px;
+  }
+
+  .drag-over {
+    outline: 2px dashed var(--accent);
+    outline-offset: -8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="header">
+    <div class="avatar">🔍</div>
+    <div>
+      <div class="title">Stego Detector — Demo Chat</div>
+      <div class="subtitle">No compression • images kept byte-exact</div>
+    </div>
+    <div class="status-pill" id="statusPill"><span class="dot"></span><span id="statusText">Checking…</span></div>
+  </div>
+
+  <div class="messages" id="messages">
+    <div class="dropzone-hint">Attach or drag an image below to send it — it's analyzed instantly, exactly as-is (no JPEG recompression like WhatsApp does).</div>
+  </div>
+
+  <div class="composer">
+    <button class="attach-btn" id="attachBtn" title="Attach image">📎</button>
+    <input type="file" id="fileInput" accept="image/*" multiple />
+    <input type="text" id="textInput" placeholder="Type a message (cosmetic only)" />
+    <button class="send-btn" id="sendBtn" title="Send">➤</button>
+  </div>
+</div>
+
+<script>
+const BACKEND_URL = "http://127.0.0.1:5000/predict";
+const HEALTH_URL = "http://127.0.0.1:5000/health";
+
+const messagesEl = document.getElementById("messages");
+const fileInput = document.getElementById("fileInput");
+const attachBtn = document.getElementById("attachBtn");
+const sendBtn = document.getElementById("sendBtn");
+const textInput = document.getElementById("textInput");
+const statusPill = document.getElementById("statusPill");
+const statusText = document.getElementById("statusText");
+
+function checkBackend() {
+  fetch(HEALTH_URL).then(r => r.json()).then(d => {
+    statusPill.className = "status-pill online";
+    statusText.textContent = d.model_loaded ? "Backend online" : "Backend online (no model)";
+  }).catch(() => {
+    statusPill.className = "status-pill offline";
+    statusText.textContent = "Backend offline";
+  });
+}
+checkBackend();
+setInterval(checkBackend, 5000);
+
+function timeNow() {
+  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function addImageMessage(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+
+    const row = document.createElement("div");
+    row.className = "msg-row out";
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+
+    const img = document.createElement("img");
+    img.src = dataUrl;
+
+    const badge = document.createElement("div");
+    badge.className = "badge scanning";
+    badge.textContent = "Scanning…";
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.innerHTML = `<span>${file.name} · ${(file.size/1024).toFixed(1)} kB</span><span>${timeNow()}</span>`;
+
+    const signals = document.createElement("div");
+    signals.className = "signals";
+
+    bubble.appendChild(img);
+    bubble.appendChild(badge);
+    bubble.appendChild(meta);
+    bubble.appendChild(signals);
+    row.appendChild(bubble);
+    messagesEl.appendChild(row);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    fetch(BACKEND_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: dataUrl }),
+    })
+      .then(r => r.json())
+      .then(result => {
+        if (result.error) throw new Error(result.error);
+        badge.className = `badge ${result.is_suspicious ? "suspicious" : "safe"}`;
+        badge.textContent = result.is_suspicious
+          ? `⚠ Suspicious (${Math.round(result.confidence * 100)}%)`
+          : `✓ Safe (${Math.round(result.confidence * 100)}%)`;
+        const top = (result.top_signals || []).slice(0, 3)
+          .map(s => `${s.feature}=${s.value}`).join(" · ");
+        signals.textContent = top ? `Top signals: ${top}` : "";
+      })
+      .catch(err => {
+        badge.className = "badge scanning";
+        badge.textContent = "Backend error";
+        signals.textContent = String(err.message || err);
+      });
+  };
+  reader.readAsDataURL(file); // reads the ORIGINAL bytes -- no recompression happens anywhere in this app
+}
+
+attachBtn.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", () => {
+  [...fileInput.files].forEach(addImageMessage);
+  fileInput.value = "";
+});
+sendBtn.addEventListener("click", () => { textInput.value = ""; }); // cosmetic only
+
+const phone = document.querySelector(".phone");
+["dragover", "dragenter"].forEach(evt =>
+  phone.addEventListener(evt, (e) => { e.preventDefault(); phone.classList.add("drag-over"); })
+);
+["dragleave", "drop"].forEach(evt =>
+  phone.addEventListener(evt, (e) => { e.preventDefault(); phone.classList.remove("drag-over"); })
+);
+phone.addEventListener("drop", (e) => {
+  const files = [...(e.dataTransfer?.files || [])].filter(f => f.type.startsWith("image/"));
+  files.forEach(addImageMessage);
+});
+</script>
+
+</body>
+</html>
